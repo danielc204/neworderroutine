@@ -1,139 +1,124 @@
-<html lang="he">
+
+<html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>סידור משימות</title>
+  <meta charset="UTF-8">
+  <title>סידור שמות</title>
   <style>
     body {
-      font-family: sans-serif;
-      direction: rtl;
-      padding: 10px;
+      font-family: Arial, sans-serif;
+      padding: 20px;
       background-color: #f0f0f0;
     }
-    #taskContainer {
+    #nameList {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 10px;
-      min-height: 100px;
-      padding: 10px;
-      border: 2px dashed #ccc;
-      background: #fff;
     }
-    .task {
-      padding: 10px;
+    .card {
+      background-color: #ffffff;
+      padding: 15px;
       border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       cursor: move;
-      text-align: right;
-      min-width: 120px;
-      flex-shrink: 0;
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      color: #fff;
+    }
+    .index {
       font-weight: bold;
-    }
-    .task img {
-      width: 20px;
-      height: 20px;
-      margin-left: 8px;
-    }
-    .drag-over {
-      border: 2px dashed #666;
+      color: #555;
     }
     button {
       margin-top: 20px;
       padding: 10px 20px;
       font-size: 16px;
-      background-color: teal;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <h3>סידור המשימות ברוטינה:</h3>
-  <div id="taskContainer"></div>
-  <button onclick="sendOrder()">סיימתי</button>
+<h2>סדר את השמות לפי הסדר הרצוי:</h2>
+<div id="nameList"></div>
 
-  <script>
-    let tasks = [];
+<button onclick="sendOrder()">שלח את הסדר</button>
 
-    function renderTasks() {
-      console.log("מרנדר משימות:", tasks); // Debug
-      const container = document.getElementById('taskContainer');
-      container.innerHTML = '';
+<script>
+  // רשימת שמות לדוגמה (ניתן לשנות או לטעון מבחוץ)
+  const names = ["דניאל", "שירה", "יונתן", "נועה", "אדם"];
 
-      tasks.forEach(task => {
-        const div = document.createElement('div');
-        div.className = 'task';
-        div.draggable = true;
-        div.dataset.id = task.id;
-        div.style.backgroundColor = task.categoryColor || "#888";
-        div.innerHTML = `<img src="${task.categoryIcon || ''}" alt="" /> ${task.name}`;
+  const nameList = document.getElementById("nameList");
 
-        div.addEventListener('dragstart', e => {
-          e.dataTransfer.setData('text/plain', e.target.dataset.id);
-        });
+  function renderList() {
+    nameList.innerHTML = '';
+    names.forEach((name, idx) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.draggable = true;
+      card.dataset.index = idx;
 
-        div.addEventListener('dragover', e => {
-          e.preventDefault();
-          e.currentTarget.classList.add('drag-over');
-        });
+      card.innerHTML = `<span class="index">${idx + 1}.</span> ${name}`;
 
-        div.addEventListener('dragleave', e => {
-          e.currentTarget.classList.remove('drag-over');
-        });
+      card.addEventListener("dragstart", dragStart);
+      card.addEventListener("dragover", dragOver);
+      card.addEventListener("drop", drop);
 
-        div.addEventListener('drop', e => {
-          e.preventDefault();
-          e.currentTarget.classList.remove('drag-over');
-          const draggedId = e.dataTransfer.getData('text/plain');
-          const draggedEl = document.querySelector(`[data-id='${draggedId}']`);
-          if (draggedEl && draggedEl !== e.currentTarget) {
-            container.insertBefore(draggedEl, e.currentTarget);
-          }
-        });
-
-        container.appendChild(div);
-      });
-    }
-
-    function sendOrder() {
-      const container = document.getElementById('taskContainer');
-      const order = [];
-      container.querySelectorAll('.task').forEach((el, index) => {
-        order.push({ id: el.dataset.id, order: index + 1 });
-      });
-
-      window.ReactNativeWebView?.postMessage(JSON.stringify(order));
-    }
-
-    // האזנה להודעות נכנסות מהאפליקציה
-    window.addEventListener("message", function(event) {
-      let raw = event.data;
-
-      try {
-        if (!raw.trim().startsWith("[")) {
-          raw = "[" + raw + "]";
-        }
-
-        const data = JSON.parse(raw);
-        if (Array.isArray(data)) {
-          tasks = data;
-          renderTasks();
-        } else {
-          console.warn("התקבל אובייקט שאינו מערך:", data);
-        }
-      } catch (e) {
-        console.error("שגיאת JSON:", e);
-        console.log("טקסט שהתקבל:", raw);
-      }
+      nameList.appendChild(card);
     });
+  }
 
-    // עוזר לבדיקה שהדף נטען
-    console.log("WebView נטען");
-  </script>
+  let dragged;
+
+  function dragStart(e) {
+    dragged = e.target;
+    e.dataTransfer.effectAllowed = "move";
+  }
+
+  function dragOver(e) {
+    e.preventDefault();
+    const target = e.target.closest(".card");
+    if (target && target !== dragged) {
+      const draggedIndex = [...nameList.children].indexOf(dragged);
+      const targetIndex = [...nameList.children].indexOf(target);
+      if (draggedIndex < targetIndex) {
+        nameList.insertBefore(target, dragged);
+      } else {
+        nameList.insertBefore(dragged, target);
+      }
+    }
+  }
+
+  function drop(e) {
+    e.preventDefault();
+    updateNames();
+  }
+
+  function updateNames() {
+    const cards = nameList.querySelectorAll(".card");
+    names.length = 0; // Clear
+    cards.forEach(card => {
+      const text = card.textContent.replace(/^\d+\.\s*/, "");
+      names.push(text);
+    });
+    renderList();
+  }
+
+  function sendOrder() {
+    const output = names.map((name, index) => ({
+      index: index + 1,
+      name: name
+    }));
+
+    const json = JSON.stringify(output);
+    console.log("סדר חדש:", json);
+
+    // שלח את המידע ל-Thunkable אם צריך
+    if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(json);
+    }
+  }
+
+  renderList();
+</script>
+
 </body>
 </html>
