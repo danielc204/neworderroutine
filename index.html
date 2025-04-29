@@ -1,4 +1,3 @@
-
 <html lang="he">
 <head>
   <meta charset="UTF-8" />
@@ -98,6 +97,8 @@
 
         container.appendChild(div);
       });
+
+      console.log("rendered tasks:", tasks);
     }
 
     function sendOrder() {
@@ -110,11 +111,12 @@
       window.ReactNativeWebView?.postMessage(JSON.stringify(order));
     }
 
-    // מקבל נתונים מהאפליקציה
-    document.addEventListener("message", function(event) {
+    
+    window.addEventListener("message", function(event) {
       let raw = event.data;
 
       try {
+        console.log("הודעה התקבלה:", raw);
         if (!raw.trim().startsWith("[")) {
           raw = "[" + raw + "]";
         }
