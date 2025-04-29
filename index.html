@@ -1,35 +1,52 @@
-
+<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>סידור שמות</title>
+  <title>בחירת סדר</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
-      background-color: #f0f0f0;
+      background-color: #f9f9f9;
     }
-    #nameList {
+    #cardsRow {
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       gap: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
     }
     .card {
-      background-color: #ffffff;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      cursor: move;
+      width: 80px;
+      height: 80px;
+      border: 2px dashed #999;
+      border-radius: 10px;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+      justify-content: center;
       align-items: center;
+      background-color: #fff;
     }
-    .index {
-      font-weight: bold;
-      color: #555;
+    .card span {
+      font-size: 14px;
+      color: #333;
+    }
+    .label {
+      display: inline-block;
+      background-color: #2196F3;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 20px;
+      margin: 5px;
+      cursor: grab;
+    }
+    #labels {
+      text-align: center;
+      margin-bottom: 20px;
     }
     button {
-      margin-top: 20px;
+      display: block;
+      margin: 0 auto;
       padding: 10px 20px;
       font-size: 16px;
     }
@@ -37,87 +54,94 @@
 </head>
 <body>
 
-<h2>סדר את השמות לפי הסדר הרצוי:</h2>
-<div id="nameList"></div>
+<h2>גרור את השמות למקומות לפי הסדר שאתה רוצה:</h2>
 
-<button onclick="sendOrder()">שלח את הסדר</button>
+<div id="cardsRow"></div>
+
+<div id="labels"></div>
+
+<button onclick="finishOrder()">סיימתי</button>
 
 <script>
-  // רשימת שמות לדוגמה (ניתן לשנות או לטעון מבחוץ)
-  const names = ["דניאל", "שירה", "יונתן", "נועה", "אדם"];
+  // כאן נטען את הנתונים מהמשתנה שהמרת ל־JSON
+  const inputNames = ["דניאל", "שירה", "יונתן", "נועה", "אדם"]; // ← תחליף בזה את הנתונים הדינמיים שלך
 
-  const nameList = document.getElementById("nameList");
+  const cardsRow = document.getElementById("cardsRow");
+  const labelsDiv = document.getElementById("labels");
 
-  function renderList() {
-    nameList.innerHTML = '';
-    names.forEach((name, idx) => {
+  function renderUI() {
+    // צור כרטיסיות ממוספרות
+    cardsRow.innerHTML = '';
+    for (let i = 0; i < inputNames.length; i++) {
       const card = document.createElement("div");
       card.className = "card";
-      card.draggable = true;
-      card.dataset.index = idx;
+      card.dataset.index = i;
+      card.innerHTML = `<span>${i + 1}</span>`;
+      card.addEventListener("dragover", allowDrop);
+      card.addEventListener("drop", handleDrop);
+      cardsRow.appendChild(card);
+    }
 
-      card.innerHTML = `<span class="index">${idx + 1}.</span> ${name}`;
-
-      card.addEventListener("dragstart", dragStart);
-      card.addEventListener("dragover", dragOver);
-      card.addEventListener("drop", drop);
-
-      nameList.appendChild(card);
+    // צור תגיות נגררות
+    labelsDiv.innerHTML = '';
+    inputNames.forEach((name, idx) => {
+      const label = document.createElement("div");
+      label.className = "label";
+      label.draggable = true;
+      label.textContent = name;
+      label.id = "label-" + idx;
+      label.addEventListener("dragstart", handleDrag);
+      labelsDiv.appendChild(label);
     });
   }
 
-  let dragged;
-
-  function dragStart(e) {
-    dragged = e.target;
-    e.dataTransfer.effectAllowed = "move";
+  function allowDrop(e) {
+    e.preventDefault();
   }
 
-  function dragOver(e) {
+  function handleDrag(e) {
+    e.dataTransfer.setData("text", e.target.id);
+  }
+
+  function handleDrop(e) {
     e.preventDefault();
-    const target = e.target.closest(".card");
-    if (target && target !== dragged) {
-      const draggedIndex = [...nameList.children].indexOf(dragged);
-      const targetIndex = [...nameList.children].indexOf(target);
-      if (draggedIndex < targetIndex) {
-        nameList.insertBefore(target, dragged);
-      } else {
-        nameList.insertBefore(dragged, target);
+    const labelId = e.dataTransfer.getData("text");
+    const draggedLabel = document.getElementById(labelId);
+    
+    // הסר תגית קודמת אם כבר קיימת
+    const existing = e.target.querySelector('.label');
+    if (existing) {
+      labelsDiv.appendChild(existing);
+    }
+
+    // הוסף את התגית הנגררת
+    e.target.appendChild(draggedLabel);
+  }
+
+  function finishOrder() {
+    const result = [];
+    const cards = document.querySelectorAll(".card");
+
+    cards.forEach((card, idx) => {
+      const label = card.querySelector(".label");
+      if (label) {
+        result.push({
+          position: idx + 1,
+          name: label.textContent
+        });
       }
-    }
-  }
-
-  function drop(e) {
-    e.preventDefault();
-    updateNames();
-  }
-
-  function updateNames() {
-    const cards = nameList.querySelectorAll(".card");
-    names.length = 0; // Clear
-    cards.forEach(card => {
-      const text = card.textContent.replace(/^\d+\.\s*/, "");
-      names.push(text);
     });
-    renderList();
-  }
 
-  function sendOrder() {
-    const output = names.map((name, index) => ({
-      index: index + 1,
-      name: name
-    }));
+    const jsonResult = JSON.stringify(result);
+    console.log("סדר שנבחר:", jsonResult);
 
-    const json = JSON.stringify(output);
-    console.log("סדר חדש:", json);
-
-    // שלח את המידע ל-Thunkable אם צריך
+    // החזרה ל־Thunkable
     if (window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(json);
+      window.ReactNativeWebView.postMessage(jsonResult);
     }
   }
 
-  renderList();
+  renderUI();
 </script>
 
 </body>
