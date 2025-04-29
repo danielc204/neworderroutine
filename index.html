@@ -61,6 +61,7 @@
     let tasks = [];
 
     function renderTasks() {
+      console.log("מרנדר משימות:", tasks); // Debug
       const container = document.getElementById('taskContainer');
       container.innerHTML = '';
 
@@ -70,7 +71,7 @@
         div.draggable = true;
         div.dataset.id = task.id;
         div.style.backgroundColor = task.categoryColor || "#888";
-        div.innerHTML = `<img src="${task.categoryIcon}" alt="" /> ${task.name}`;
+        div.innerHTML = `<img src="${task.categoryIcon || ''}" alt="" /> ${task.name}`;
 
         div.addEventListener('dragstart', e => {
           e.dataTransfer.setData('text/plain', e.target.dataset.id);
@@ -97,8 +98,6 @@
 
         container.appendChild(div);
       });
-
-      console.log("rendered tasks:", tasks);
     }
 
     function sendOrder() {
@@ -111,12 +110,11 @@
       window.ReactNativeWebView?.postMessage(JSON.stringify(order));
     }
 
-    
+    // האזנה להודעות נכנסות מהאפליקציה
     window.addEventListener("message", function(event) {
       let raw = event.data;
 
       try {
-        console.log("הודעה התקבלה:", raw);
         if (!raw.trim().startsWith("[")) {
           raw = "[" + raw + "]";
         }
@@ -126,13 +124,9 @@
           tasks = data;
           renderTasks();
         } else {
-          console.warn("המידע שהתקבל אינו מערך:", data);
+          console.warn("התקבל אובייקט שאינו מערך:", data);
         }
       } catch (e) {
-        console.error("שגיאה בפיענוח JSON:", e);
-        console.log("הטקסט שהתקבל:", raw);
+        console.error("שגיאת JSON:", e);
+        console.log("טקסט שהתקבל:", raw);
       }
-    });
-  </script>
-</body>
-</html>
