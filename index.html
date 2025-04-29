@@ -1,0 +1,138 @@
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>סידור משימות</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      direction: rtl;
+      padding: 10px;
+      background-color: #f0f0f0;
+    }
+    #taskContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      min-height: 100px;
+      padding: 10px;
+      border: 2px dashed #ccc;
+      background: #fff;
+    }
+    .task {
+      padding: 10px;
+      border-radius: 8px;
+      cursor: move;
+      text-align: right;
+      min-width: 120px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      color: #fff;
+      font-weight: bold;
+    }
+    .task img {
+      width: 20px;
+      height: 20px;
+      margin-left: 8px;
+    }
+    .drag-over {
+      border: 2px dashed #666;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: teal;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h3>סידור המשימות ברוטינה:</h3>
+  <div id="taskContainer"></div>
+  <button onclick="sendOrder()">סיימתי</button>
+
+  <script>
+    let tasks = [];
+
+    function renderTasks() {
+      const container = document.getElementById('taskContainer');
+      container.innerHTML = ''; // מנקה את מה שהיה
+
+      tasks.forEach(task => {
+        const div = document.createElement('div');
+        div.className = 'task';
+        div.draggable = true;
+        div.dataset.id = task.id;
+        div.style.backgroundColor = task.categoryColor || "#888";
+
+        div.innerHTML = `<img src="${task.categoryIcon}" alt="" /> ${task.name}`;
+
+        div.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', e.target.dataset.id);
+        });
+
+        div.addEventListener('dragover', e => {
+          e.preventDefault();
+          e.currentTarget.classList.add('drag-over');
+        });
+
+        div.addEventListener('dragleave', e => {
+          e.currentTarget.classList.remove('drag-over');
+        });
+
+        div.addEventListener('drop', e => {
+          e.preventDefault();
+          e.currentTarget.classList.remove('drag-over');
+          const draggedId = e.dataTransfer.getData('text/plain');
+          const draggedEl = document.querySelector(`[data-id='${draggedId}']`);
+          if (draggedEl && draggedEl !== e.currentTarget) {
+            container.insertBefore(draggedEl, e.currentTarget);
+          }
+        });
+
+        container.appendChild(div);
+      });
+    }
+
+    function sendOrder() {
+      const container = document.getElementById('taskContainer');
+      const order = [];
+      container.querySelectorAll('.task').forEach((el, index) => {
+        order.push({ id: el.dataset.id, order: index + 1 });
+      });
+
+      window.ReactNativeWebView?.postMessage(JSON.stringify(order));
+    }
+
+    // מאזין להודעה מ־Thunkable
+    window.addEventListener("message", function(event) {
+      try {
+        let raw = event.data;
+
+        // ניסיון לעטוף את הטקסט אם הוא לא מתחיל בסוגריים מרובעים
+        if (!raw.trim().startsWith("[")) {
+          raw = "[" + raw + "]";
+        }
+
+        const data = JSON.parse(raw);
+
+        if (Array.isArray(data)) {
+          tasks = data;
+          renderTasks();
+        } else {
+          console.warn("המידע שהתקבל אינו מערך:", data);
+        }
+      } catch (e) {
+        console.error("שגיאה בפיענוח JSON:", e);
+        console.log("הטקסט שהתקבל:", event.data);
+      }
+    });
+  </script>
+</body>
+</html>
