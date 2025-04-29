@@ -112,6 +112,7 @@
 
     // מאזין להודעה מ־Thunkable
     window.addEventListener("message", function(event) {
+       console.log("Received from Thunkable:", event.data);
       try {
         let raw = event.data;
 
