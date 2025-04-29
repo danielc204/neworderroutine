@@ -126,7 +126,7 @@
       if (label) {
         result.push({
           position: idx + 1,
-          name: label.textContent
+          name: label.textContent.trim()
         });
       }
     });
@@ -139,12 +139,24 @@
     }
   }
 
-  // מאזין להודעה מ־Thunkable
+  // קבלת נתונים מ־Thunkable
   window.addEventListener("message", function(event) {
     try {
-      const data = JSON.parse(event.data);
-      if (Array.isArray(data)) {
-        inputNames = data;
+      let raw = event.data;
+      
+      // הסרה של רווחים מיותרים אם צריך
+      raw = raw.trim();
+
+      // אם קיבלנו JSON תקני
+      if (raw.startsWith("[") && raw.endsWith("]")) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          inputNames = parsed.map(name => name.trim());
+          renderUI();
+        }
+      } else {
+        // אם קיבלנו מחרוזת רגילה עם שמות מופרדים בפסיקים
+        inputNames = raw.split(",").map(name => name.trim()).filter(name => name !== "");
         renderUI();
       }
     } catch (e) {
