@@ -50,28 +50,31 @@
       padding: 10px 20px;
       font-size: 16px;
     }
+    #instructions {
+      text-align: center;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
 
-<h2>גרור את השמות למקומות לפי הסדר שאתה רוצה:</h2>
+<h2 id="instructions">גרור את השמות לכרטיסיות לפי הסדר הרצוי:</h2>
 
 <div id="cardsRow"></div>
-
 <div id="labels"></div>
 
 <button onclick="finishOrder()">סיימתי</button>
 
 <script>
-  // כאן נטען את הנתונים מהמשתנה שהמרת ל־JSON
-  const inputNames = ["דניאל", "שירה", "יונתן", "נועה", "אדם"]; // ← תחליף בזה את הנתונים הדינמיים שלך
-
-  const cardsRow = document.getElementById("cardsRow");
-  const labelsDiv = document.getElementById("labels");
+  let inputNames = [];
 
   function renderUI() {
-    // צור כרטיסיות ממוספרות
+    const cardsRow = document.getElementById("cardsRow");
+    const labelsDiv = document.getElementById("labels");
+
     cardsRow.innerHTML = '';
+    labelsDiv.innerHTML = '';
+
     for (let i = 0; i < inputNames.length; i++) {
       const card = document.createElement("div");
       card.className = "card";
@@ -82,8 +85,6 @@
       cardsRow.appendChild(card);
     }
 
-    // צור תגיות נגררות
-    labelsDiv.innerHTML = '';
     inputNames.forEach((name, idx) => {
       const label = document.createElement("div");
       label.className = "label";
@@ -107,14 +108,12 @@
     e.preventDefault();
     const labelId = e.dataTransfer.getData("text");
     const draggedLabel = document.getElementById(labelId);
-    
-    // הסר תגית קודמת אם כבר קיימת
+
     const existing = e.target.querySelector('.label');
     if (existing) {
-      labelsDiv.appendChild(existing);
+      document.getElementById("labels").appendChild(existing);
     }
 
-    // הוסף את התגית הנגררת
     e.target.appendChild(draggedLabel);
   }
 
@@ -135,13 +134,23 @@
     const jsonResult = JSON.stringify(result);
     console.log("סדר שנבחר:", jsonResult);
 
-    // החזרה ל־Thunkable
     if (window.ReactNativeWebView) {
       window.ReactNativeWebView.postMessage(jsonResult);
     }
   }
 
-  renderUI();
+  // מאזין להודעה מ־Thunkable
+  window.addEventListener("message", function(event) {
+    try {
+      const data = JSON.parse(event.data);
+      if (Array.isArray(data)) {
+        inputNames = data;
+        renderUI();
+      }
+    } catch (e) {
+      console.error("שגיאה בקריאת הנתונים מ־Thunkable:", e);
+    }
+  });
 </script>
 
 </body>
