@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="he">
 <head>
   <meta charset="UTF-8" />
@@ -62,7 +63,7 @@
 
     function renderTasks() {
       const container = document.getElementById('taskContainer');
-      container.innerHTML = ''; // מנקה את מה שהיה
+      container.innerHTML = '';
 
       tasks.forEach(task => {
         const div = document.createElement('div');
@@ -70,7 +71,6 @@
         div.draggable = true;
         div.dataset.id = task.id;
         div.style.backgroundColor = task.categoryColor || "#888";
-
         div.innerHTML = `<img src="${task.categoryIcon}" alt="" /> ${task.name}`;
 
         div.addEventListener('dragstart', e => {
@@ -110,19 +110,16 @@
       window.ReactNativeWebView?.postMessage(JSON.stringify(order));
     }
 
-    // מאזין להודעה מ־Thunkable
-    window.addEventListener("message", function(event) {
-       console.log("Received from Thunkable:", event.data);
-      try {
-        let raw = event.data;
+    // מקבל נתונים מהאפליקציה
+    document.addEventListener("message", function(event) {
+      let raw = event.data;
 
-        // ניסיון לעטוף את הטקסט אם הוא לא מתחיל בסוגריים מרובעים
+      try {
         if (!raw.trim().startsWith("[")) {
           raw = "[" + raw + "]";
         }
 
         const data = JSON.parse(raw);
-
         if (Array.isArray(data)) {
           tasks = data;
           renderTasks();
@@ -131,7 +128,7 @@
         }
       } catch (e) {
         console.error("שגיאה בפיענוח JSON:", e);
-        console.log("הטקסט שהתקבל:", event.data);
+        console.log("הטקסט שהתקבל:", raw);
       }
     });
   </script>
